@@ -40,10 +40,12 @@ app.use(xss());
 // extra packages
 
 // routes
-app.get('/', (req, res) => {
+/* app.get('/', (req, res) => {
   res.send('<h1>Jobs API</h1><a href="/api-docs">Documentation</a>');
-});
+}); */
 app.use("/api-docs", swaggerUI.serve, swaggerUI.setup(swaggerDocument));
+
+app.use(express.static("public"));
 
 // routes
 app.use('/api/v1/auth', authRouter);
