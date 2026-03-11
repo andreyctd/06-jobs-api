@@ -13,6 +13,12 @@ let jobsDiv = null;
 let jobsTable = null;
 let jobsTableHeader = null;
 
+let searchInput = null;
+let statusFilter = null;
+let paginationDiv = null;
+
+let currentPage = 1;
+
 export const handleJobs = () => {
   jobsDiv = document.getElementById("jobs");
   const logoff = document.getElementById("logoff");
@@ -20,61 +26,84 @@ export const handleJobs = () => {
   jobsTable = document.getElementById("jobs-table");
   jobsTableHeader = document.getElementById("jobs-table-header");
 
+  searchInput = document.getElementById("search");
+  statusFilter = document.getElementById("filter-status");
+  paginationDiv = document.getElementById("pagination");
+
   jobsDiv.addEventListener("click", async (e) => {
     if (inputEnabled && e.target.nodeName === "BUTTON") {
-        if (e.target === addJob) {
-            showAddEdit(null);
-        } else if (e.target === logoff) {
-            setToken(null);
+      if (e.target === addJob) {
+        showAddEdit(null);
+      } else if (e.target === logoff) {
+        setToken(null);
 
-            message.textContent = "You have been logged off.";
+        message.textContent = "You have been logged off.";
 
-            jobsTable.replaceChildren([jobsTableHeader]);
+        jobsTable.replaceChildren([jobsTableHeader]);
 
-            showLoginRegister();
+        showLoginRegister();
+      } else if (e.target.classList.contains("editButton")) {
+        message.textContent = "";
+        showAddEdit(e.target.dataset.id);
+      } else if (e.target.classList.contains("deleteButton")) {
+        enableInput(false);
 
-        } else if (e.target.classList.contains("editButton")) {
-            message.textContent = "";
-            showAddEdit(e.target.dataset.id);
+        try {
+          const response = await fetch(`/api/v1/jobs/${e.target.dataset.id}`, {
+            method: "DELETE",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          });
 
-        } else if (e.target.classList.contains("deleteButton")) {
+          const data = await response.json();
 
-            enableInput(false);
-
-            try {
-                const response = await fetch(`/api/v1/jobs/${e.target.dataset.id}`, {
-                    method: "DELETE",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`,
-                    },
-                });
-
-                const data = await response.json();
-
-                if (response.status === 200) {
-                    message.textContent = data.msg;
-                    showJobs(); // refresh table
-                } else {
-                    message.textContent = data.msg;
-                }
-
-            } catch (err) {
-                console.log(err);
-                message.textContent = "A communication error occurred.";
-            }
-
-            enableInput(true);
+          if (response.status === 200) {
+            message.textContent = data.msg;
+            showJobs(); // refresh table
+          } else {
+            message.textContent = data.msg;
+          }
+        } catch (err) {
+          console.log(err);
+          message.textContent = "A communication error occurred.";
         }
+
+        enableInput(true);
+      }
     }
   });
+
+  /* SEARCH */
+  const searchButton = document.getElementById("search-button");
+
+  if (searchButton) {
+    searchButton.addEventListener("click", () => {
+      currentPage = 1;
+      showJobs();
+    });
+  }
 };
 
 export const showJobs = async () => {
   try {
     enableInput(false);
 
-    const response = await fetch("/api/v1/jobs", {
+      const search = searchInput ? searchInput.value : "";
+      const status = statusFilter ? statusFilter.value : "";
+
+      let url = `/api/v1/jobs?page=${currentPage}&limit=5`;
+
+      if (search) {
+        url += `&search=${search}`;
+      }
+
+      if (status) {
+        url += `&status=${status}`;
+      }
+
+    const response = await fetch(/*   "/api/v1/jobs"   */ url, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -105,6 +134,7 @@ export const showJobs = async () => {
         }
         jobsTable.replaceChildren(...children);
       }
+      createPagination(data.numOfPages);
     } else {
       message.textContent = data.msg;
     }
@@ -114,4 +144,33 @@ export const showJobs = async () => {
   }
   enableInput(true);
   setDiv(jobsDiv);
+};
+
+/* PAGINATION */
+
+const createPagination = (numPages) => {
+
+  if (!paginationDiv) return;
+
+  paginationDiv.innerHTML = "";
+
+  for (let i = 1; i <= numPages; i++) {
+
+    const btn = document.createElement("button");
+
+    btn.textContent = i;
+
+    if (i === currentPage) {
+      btn.style.fontWeight = "bold";
+    }
+
+    btn.addEventListener("click", () => {
+      currentPage = i;
+      showJobs();
+    });
+
+    paginationDiv.appendChild(btn);
+
+  }
+
 };
