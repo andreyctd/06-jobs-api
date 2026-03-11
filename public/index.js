@@ -26,11 +26,33 @@ export const setToken = (value) => {
 
 export let message = null;
 
+/* -----------------------------
+   SEARCH / FILTER / PAGINATION
+-------------------------------- */
+
+export let currentPage = 1;
+
+export const resetPage = () => {
+  currentPage = 1;
+};
+
+export const setPage = (page) => {
+  currentPage = page;
+};
+
+/* -----------------------------
+   IMPORT MODULES
+-------------------------------- */
+
 import { showJobs, handleJobs } from "./jobs.js";
 import { showLoginRegister, handleLoginRegister } from "./loginRegister.js";
 import { handleLogin } from "./login.js";
 import { handleAddEdit } from "./addEdit.js";
 import { handleRegister } from "./register.js";
+
+/* -----------------------------
+   APP START
+-------------------------------- */
 
 document.addEventListener("DOMContentLoaded", () => {
   token = localStorage.getItem("token");
