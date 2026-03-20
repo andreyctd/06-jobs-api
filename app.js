@@ -47,18 +47,71 @@ app.use("/api-docs", swaggerUI.serve, swaggerUI.setup(swaggerDocument));
 
 app.use(express.static("public"));
 
+// middleware to fix Content-Type for testing purposes
+app.use((req, res, next) => {
+  if (req.path === "/multiply") {
+    res.set("Content-Type", "application/json");
+  } else {
+    res.set("Content-Type", "text/html");
+  }
+  next();
+});
+
 // routes
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/jobs', authenticateUser, jobsRouter);
+
+// multiply API (for testing)
+app.get("/multiply", (req, res) => {
+  const result = req.query.first * req.query.second;
+  if (result.isNaN) {
+    result = "NaN";
+  } else if (result == null) {
+    result = "null";
+  }
+  res.json({ result: result });
+});
+
+/*   app.get("/multiply", (req, res) => {
+  const first = Number(req.query.first);
+  const second = Number(req.query.second);
+
+  let result = first * second;
+
+  if (isNaN(result)) {
+    result = "NaN";
+  }
+
+  res.json({ result });
+});   */
+
+/*   app.get("/", (req, res) => {
+  res.send(`
+    <html>
+      <head><title>Jobs App</title></head>
+      <body>
+        <h1>Jobs Application</h1>
+        <p>Click this link to view jobs</p>
+      </body>
+    </html>
+  `);
+});   */
 
 app.use(notFoundMiddleware);
 app.use(errorHandlerMiddleware);
 
 const port = process.env.PORT || 3000;
 
+// for testing, we want to use a different database, so we check the environment variable
+let mongoURL = process.env.MONGO_URI;
+if (process.env.NODE_ENV == "test") {
+  mongoURL = process.env.MONGO_URI_TEST;
+}
+
+// connect to the database and start the server
 const start = async () => {
   try {
-    await connectDB(process.env.MONGO_URI);
+    await connectDB(mongoURL);   // wait for DB connection
     app.listen(port, () =>
       console.log(`Server is listening on port ${port}...`)
     );
@@ -67,4 +120,38 @@ const start = async () => {
   }
 };
 
+/*   const start = async () => {
+  try {
+    await connectDB(mongoURL);
+    const server = app.listen(port, () =>
+      console.log(`Server is listening on port ${port}...`)
+    );
+    return server; // return server instance
+  } catch (error) {
+    console.log(error);
+  }
+};   */
+
+/*   const port = process.env.PORT || 3000;
+const start = () => {
+  try {
+    require("./db/connect")(mongoURL);
+    return app.listen(port, () =>
+      console.log(`Server is listening on port ${port}...`),
+    );
+  } catch (error) {
+    console.log(error);
+  }
+};
+
 start();
+
+module.exports = { app };   */
+
+// only start server if NOT testing
+if (process.env.NODE_ENV !== "test") {
+start();
+}
+
+// export app for testing
+module.exports = { app };
